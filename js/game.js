@@ -492,7 +492,7 @@
             e.chasing = true; e.chaseSpeed = 1.2; toast('Bedetti: cade voce?! nao corre!');
           }
         } else {
-          e.chaseSpeed = Math.min(2.4, e.chaseSpeed + 0.012); // ramps, but slower than a run (escapable)
+          e.chaseSpeed = Math.min(2.7, e.chaseSpeed + 0.016); // ramps up, but still slower than a full run (escapable)
           const dir = pcx > (e.x + e.w / 2) ? 1 : -1;
           e.x += dir * e.chaseSpeed;
           e.vx = dir * 0.6;                    // for facing
@@ -836,7 +836,7 @@
                           // 3 approach2 + line2, 4 pause, 5 close approach,
                           // 6 cut-to-black, 7 done
       t: 0,
-      girlX: 330, bedX: 70,
+      girlX: 330, bedX: -30,
       line: -1, textShown: 0, fade: 0, girlSurprised: false,
       camScale: 2.0, bars: 0, hearts: [], shake: 0, arrived: false,
       gcat: null, catLift: 0, blackHold: 0, videoStarted: false,
@@ -851,9 +851,9 @@
     c.bars = Math.min(1, c.bars + 0.05);   // cinematic bars slide in
 
     switch (c.phase) {
-      case 0: // Bedetti walks in from the left
-        c.bedX += 0.9;
-        if (c.bedX > 150) { c.phase = 1; c.t = 0; c.line = 0; c.textShown = 0; }
+      case 0: // Bedetti SPRINTS in and finally catches up to Isabelly
+        c.bedX += (c.bedX < c.girlX - 82 ? 2.7 : 0.6);   // runs, then slows as she arrives
+        if (c.bedX > c.girlX - 80 && c.t > 20) { c.phase = 1; c.t = 0; c.line = 0; c.textShown = 0; }
         break;
       case 1: // Bedetti: "Finalmente te alcancei..."
         c.textShown = Math.min(CUT_LINES[0].text.length, c.textShown + 0.6);
