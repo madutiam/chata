@@ -870,11 +870,20 @@
         c.textShown = Math.min(CUT_LINES[2].text.length, c.textShown + 0.55);
         if (c.t > 170) { c.phase = 4; c.t = 0; }
         break;
-      case 4: // dramatic pause, then fade the pixel stage to black
-        if (c.t > 55) c.fade = Math.min(1, c.fade + 0.02);
-        if (c.fade >= 1) { c.phase = 5; c.t = 0; }
+      case 4: { // PIXEL beat: a cat trots in and Bedetti scoops it into her arms
+        if (!c.gcat) c.gcat = { x: 12, y: CUT_BASE - 11, kind: 'azul', held: false, bob: 0 };
+        const tx = c.bedX - 2;
+        if (c.gcat.x < tx) c.gcat.x += 2.0; else { c.gcat.x = tx; c.gcat.held = true; }
+        c.gcat.bob += 0.2;
+        if (c.gcat.held) c.catLift = Math.min(1, c.catLift + 0.05);   // cat rises into her arms
+        if (c.catLift >= 1 && c.t > 95) { c.phase = 5; c.t = 0; }
         break;
-      case 5: // play the ending cinematic video; when it ends -> BUILD SUCCESSFUL
+      }
+      case 5: // fade the pixel stage to black
+        if (c.t > 20) c.fade = Math.min(1, c.fade + 0.02);
+        if (c.fade >= 1) { c.phase = 6; c.t = 0; }
+        break;
+      case 6: // play the ending cinematic video; when it ends -> BUILD SUCCESSFUL
         if (!c.videoStarted) { c.videoStarted = true; playEndingVideo(); }
         if (c.t > 900) finishCutsceneWin();            // safety fallback
         break;
@@ -885,7 +894,7 @@
     }
 
     // gentle camera push-in (kept modest — no giant characters)
-    const target = [2.0, 2.0, 2.05, 2.1, 2.12, 2.12][c.phase] || 2.0;
+    const target = [2.0, 2.0, 2.05, 2.1, 2.12, 2.12, 2.12, 2.12][c.phase] || 2.0;
     c.camScale += (target - c.camScale) * 0.06;
   }
 
@@ -981,7 +990,7 @@
     // Isabelly + her relieved/confused "?" once the "threat" turns out to be a cat
     if (isaReady) drawImgFeet(isaImg, ISA_W, ISA_H, c.girlX + 8, feet, S, true, 0);
     else { SPR.draw(ctx, SPR.girl.idle, Math.round(c.girlX), feet - SPR.girl.idle.h * S, S, true); }
-    if (c.phase >= 5 && Math.floor(c.t / 16) % 2) text('?', c.girlX + 8 + 6 * (S / 2), feet - ISA_H * S - 8, 16, '#a9dcff', 'left');
+    if (c.gcat && c.gcat.held && Math.floor(c.t / 16) % 2) text('?', c.girlX + 8 + 6 * (S / 2), feet - ISA_H * S - 8, 16, '#a9dcff', 'left');
 
     // --- vignette (tightens toward the finish) ---
     const vig = 0.35 + (c.phase >= 4 ? 0.3 : 0);
