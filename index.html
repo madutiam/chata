@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Isabelly: BUILD SUCCESSFUL</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="stage">
+    <canvas id="game" width="480" height="270"></canvas>
+
+    <!-- ================= TITLE SCREEN ================= -->
+    <section id="screen-title" class="overlay">
+      <div class="panel">
+        <p class="kicker">// a aventura pixel da Isabelly</p>
+        <h1 class="title">ISABELLY<span class="blink">_</span></h1>
+        <p class="subtitle">BUILD&nbsp;SUCCESSFUL</p>
+        <p class="tagline">Corra pelo código, desvie dos bugs e alcance o deploy.</p>
+        <button id="btn-play" class="btn btn-primary">JOGAR</button>
+        <div class="controls">
+          <p><b>A / seta esq.</b> · <b>D / seta dir.</b> andar &nbsp;·&nbsp; <b>Espaço / W / seta cima</b> pular</p>
+          <p>segure a direção para <b>correr</b> &nbsp;·&nbsp; no celular use os botões na tela</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= GAME OVER ================= -->
+    <section id="screen-gameover" class="overlay" hidden>
+      <div class="panel">
+        <p class="err-tag">✖ BUILD FAILED</p>
+        <h2 class="err">Uncaught GameOverError</h2>
+        <p class="tagline">A Isabelly travou antes do deploy.</p>
+        <p id="go-score" class="score-line">score: 00000</p>
+        <div class="btn-row">
+          <button id="btn-continue" class="btn btn-primary">CONTINUAR (checkpoint)</button>
+          <button id="btn-restart" class="btn btn-danger">RECOMEÇAR</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= WIN / BUILD SUCCESSFUL ================= -->
+    <section id="screen-win" class="overlay" hidden>
+      <div class="panel">
+        <p class="ok-tag">✔ compiled</p>
+        <h2 class="ok">BUILD SUCCESSFUL</h2>
+        <p class="tagline">Deploy pronto. A Bedetti que espere sentada.</p>
+        <p id="win-score" class="score-line">score: 00000</p>
+        <button id="btn-again" class="btn btn-primary">JOGAR NOVAMENTE</button>
+      </div>
+    </section>
+
+    <!-- ================= TOUCH CONTROLS (small screens) ================= -->
+    <div id="touch">
+      <div class="tpad">
+        <button id="btn-left" class="tbtn" aria-label="esquerda">&lt;</button>
+        <button id="btn-right" class="tbtn" aria-label="direita">&gt;</button>
+      </div>
+      <button id="btn-jump" class="tbtn tbtn-jump" aria-label="pular">PULAR</button>
+    </div>
+  </div>
+
+  <div id="rotate">
+    <div class="rot-icon">📱</div>
+    <p>Vire o celular na horizontal</p>
+    <small>o jogo fica melhor em modo paisagem</small>
+  </div>
+
+  <p class="footer">Isabelly · BUILD SUCCESSFUL — jogo pixel art · sem áudio · roda 100% offline</p>
+
+  <script src="js/sprites.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
