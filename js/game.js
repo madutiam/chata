@@ -826,7 +826,7 @@
       girlX: 330, bedX: 70,
       line: -1, textShown: 0, fade: 0, girlSurprised: false,
       camScale: 2.0, bars: 0, hearts: [], shake: 0, arrived: false,
-      gbug: null, coffee: null, tripT: 0, blackHold: 0,
+      gcat: null, catLift: 0, blackHold: 0,
     };
     hideAllOverlays();
   }
@@ -856,24 +856,22 @@
         c.textShown = Math.min(CUT_LINES[2].text.length, c.textShown + 0.55);
         if (c.t > 170) { c.phase = 4; c.t = 0; }
         break;
-      case 4: // a beat: Bedetti inches in and a bug scurries under her feet
-        if (c.bedX < c.girlX - 44) c.bedX += 0.35;
-        if (!c.gbug) c.gbug = { x: c.girlX + 44, y: CUT_BASE - 8 };
-        c.gbug.x -= 1.7;                               // bug runs toward Bedetti
-        if (c.t > 55) { c.phase = 5; c.t = 0; }
+      case 4: { // a cat trots in toward Bedetti (her "one thing")
+        if (!c.gcat) c.gcat = { x: 16, y: CUT_BASE - 11, kind: Math.random() < 0.5 ? 'azul' : 'tigrao', held: false, bob: 0 };
+        const tx = c.bedX + 4;
+        if (c.gcat.x < tx) c.gcat.x += 1.9; else c.gcat.x = tx;
+        c.gcat.bob += 0.2;
+        if (c.gcat.x >= tx && c.t > 26) { c.phase = 5; c.t = 0; }
         break;
-      case 5: // THE TRIP — she stumbles on the bug and flings her coffee
-        c.tripT++;
-        if (c.tripT === 1) c.coffee = { x: c.bedX + 32, y: CUT_BASE - 34, vx: 1.4, vy: -3.4, spin: 0, landed: false };
-        if (c.coffee && !c.coffee.landed) {
-          c.coffee.vy += 0.22; c.coffee.x += c.coffee.vx; c.coffee.y += c.coffee.vy; c.coffee.spin += 0.45;
-          if (c.coffee.y >= CUT_BASE - 3) { c.coffee.landed = true; c.coffee.y = CUT_BASE - 3; }
-        }
-        if (c.gbug) c.gbug.x -= 2.4;                   // bug bolts off in a panic
-        if (c.t > 120) { c.phase = 6; c.t = 0; }
+      }
+      case 5: // Bedetti scoops the cat into her arms and plays it cool
+        c.gcat.held = true;
+        c.catLift = Math.min(1, c.catLift + 0.06);     // cat rises into her arms
+        if (c.t > 78) { c.phase = 6; c.t = 0; }
         break;
-      case 6: // awkward stare + "OOPS!", then the screen darkens gradually
-        if (c.t > 34) c.fade = Math.min(1, c.fade + 0.013);
+      case 6: // Bedetti strolls off into the night with the cat; screen darkens
+        c.bedX -= 0.85;                                 // walk away to the left
+        if (c.t > 24) c.fade = Math.min(1, c.fade + 0.011);
         if (c.fade >= 1) c.blackHold++;
         if (c.blackHold > 40) { c.phase = 7; }
         break;
@@ -883,8 +881,8 @@
         break;
     }
 
-    // gentle camera push-in — a little punch-in on the trip for comedy
-    const target = [2.0, 2.0, 2.05, 2.1, 2.12, 2.24, 2.2, 2.2][c.phase] || 2.0;
+    // gentle camera push-in (kept modest — no giant characters)
+    const target = [2.0, 2.0, 2.05, 2.1, 2.12, 2.14, 2.12, 2.12][c.phase] || 2.0;
     c.camScale += (target - c.camScale) * 0.06;
   }
 
@@ -931,58 +929,39 @@
 
     // --- characters (push-in scale), feet on baseline ---
     const S = c.camScale, feet = CUT_BASE;
-    const bedMoving = (c.phase === 0 || c.phase === 3 || c.phase === 4);
-    const tripping = c.phase >= 5;
+    const bedMoving = (c.phase === 0 || c.phase === 3 || c.phase === 6);
+    const bedFacingRight = (c.phase < 6);              // faces Isabelly, then turns to leave
     // soft shadows
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath(); ctx.ellipse(c.bedX + 22, feet + 2, 16 * (S / 2), 4, 0, 0, 6.28); ctx.fill();
     ctx.beginPath(); ctx.ellipse(c.girlX + 8, feet + 2, 13 * (S / 2), 4, 0, 0, 6.28); ctx.fill();
 
-    // the gag bug scurrying underfoot
-    if (c.gbug && c.gbug.x > -20) SPR.draw(ctx, SPR.bug, Math.round(c.gbug.x), Math.round(c.gbug.y), 1, c.gbug.x < c.bedX);
+    // the cat trotting in on the ground (before it's scooped up)
+    const catSpr = c.gcat
+      ? (c.gcat.kind === 'azul' ? (Math.floor(c.gcat.bob) % 2 ? SPR.catAzul2 : SPR.catAzul) : SPR.catTigrao)
+      : null;
+    if (c.gcat && !c.gcat.held) {
+      SPR.draw(ctx, catSpr, Math.round(c.gcat.x - catSpr.w / 2), Math.round(feet - catSpr.h + Math.sin(c.gcat.bob) * 1), 1, false);
+    }
 
-    // Bedetti — trips on the bug and pitches forward (faceplant) toward Isabelly
-    const bedFeetX = c.bedX + 22;
-    if (bedOK()) {
-      if (tripping) {
-        const ang = Math.min(1.25, c.tripT * 0.028);
-        ctx.save();
-        ctx.translate(bedFeetX, feet); ctx.rotate(ang); ctx.translate(-bedFeetX, -feet);
-        drawBed(bedFeetX, feet, S, true, 1);
-        ctx.restore();
-      } else {
-        drawBed(bedFeetX, feet, S, true, bedMoving ? Math.floor(c.t / 8) : 1);
-      }
-    } else { const bf = Math.floor(c.t / 12) % 2 ? SPR.bedetti2 : SPR.bedetti; SPR.draw(ctx, bf, Math.round(c.bedX), feet - bf.h * S, S, false); }
+    // Bedetti (idle, then strolls off to the left carrying the cat)
+    if (bedOK()) drawBed(c.bedX + 22, feet, S, bedFacingRight, bedMoving ? Math.floor(c.t / 8) : 1);
+    else { const bf = Math.floor(c.t / 12) % 2 ? SPR.bedetti2 : SPR.bedetti; SPR.draw(ctx, bf, Math.round(c.bedX), feet - bf.h * S, S, false); }
 
-    // Isabelly + her flustered "!" during the pratfall
+    // the cat cradled in her arms (rises into place, then rides along)
+    if (c.gcat && c.gcat.held && catSpr) {
+      const groundY = feet - catSpr.h;
+      const armY = feet - 20 * S;
+      const cy = groundY + (armY - groundY) * c.catLift;
+      SPR.draw(ctx, catSpr, Math.round(c.bedX + 22 - catSpr.w / 2 + (bedFacingRight ? 5 : -5)), Math.round(cy), 1, false);
+      // a little heart — she loves this cat
+      if (Math.floor(c.t / 18) % 2) SPR.draw(ctx, SPR.heart, Math.round(c.bedX + 30), Math.round(feet - 40 * S), 1, false);
+    }
+
+    // Isabelly + her relieved/confused "?" once the "threat" turns out to be a cat
     if (isaReady) drawImgFeet(isaImg, ISA_W, ISA_H, c.girlX + 8, feet, S, true, 0);
     else { SPR.draw(ctx, SPR.girl.idle, Math.round(c.girlX), feet - SPR.girl.idle.h * S, S, true); }
-    if (tripping && Math.floor(c.t / 12) % 2) text('!', c.girlX + 8 + 6 * (S / 2), feet - ISA_H * S - 6, 16, '#ffd76b', 'left');
-
-    // flying coffee cup -> spilled puddle
-    if (c.coffee) {
-      const cf = c.coffee;
-      if (!cf.landed) {
-        ctx.save();
-        ctx.translate(cf.x, cf.y); ctx.rotate(cf.spin);
-        ctx.fillStyle = '#eceae4'; ctx.fillRect(-3, -4, 6, 8);
-        ctx.fillStyle = '#7a4a25'; ctx.fillRect(-3, -4, 6, 2);
-        ctx.restore();
-        ctx.fillStyle = '#7a4a25';
-        ctx.fillRect(Math.round(cf.x - 5), Math.round(cf.y - 2), 2, 2);
-        ctx.fillRect(Math.round(cf.x + 4), Math.round(cf.y + 1), 2, 2);
-      } else {
-        ctx.fillStyle = 'rgba(122,74,37,0.85)';
-        ctx.beginPath(); ctx.ellipse(cf.x, feet + 1, 12, 3, 0, 0, 6.28); ctx.fill();
-        ctx.fillStyle = '#eceae4'; ctx.fillRect(Math.round(cf.x - 2), feet - 4, 5, 4);
-      }
-    }
-
-    // comic "OOPS!" once she's down
-    if (c.phase >= 5 && c.tripT > 26) {
-      text('OOPS!', (c.bedX + c.girlX) / 2 + 10, feet - 72 + Math.sin(c.t * 0.2) * 2, 18, '#ff7a7a', 'center');
-    }
+    if (c.phase >= 5 && Math.floor(c.t / 16) % 2) text('?', c.girlX + 8 + 6 * (S / 2), feet - ISA_H * S - 8, 16, '#a9dcff', 'left');
 
     // --- vignette (tightens toward the finish) ---
     const vig = 0.35 + (c.phase >= 4 ? 0.3 : 0);
