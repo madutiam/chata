@@ -18,6 +18,9 @@
   canvas.height = VH;
   ctx.imageSmoothingEnabled = false;
 
+  // ending cinematic video element (plays after the dialogue)
+  const endVideo = document.getElementById('ending-video');
+
   // Real pixel-art sprite of Isabelly, extracted from the reference sheet
   // (assets/references/chata-girl-sheet.jpeg) -> assets/isabelly.png.
   // Falls back to the code-drawn sprite until the image has loaded.
@@ -89,6 +92,7 @@
   const MAX_FALL = 13;
   const ACCEL = 0.9;               // snappier acceleration
   const FRICTION = 0.5;            // stronger stop -> less sliding
+  const SPRING_V = -13.6;          // launch from a spring pad (reaches ~150px)
 
   // ------------------------------------------------------------------ input
   const keys = {};
@@ -304,7 +308,7 @@
   function makePlayer(px, py) {
     return {
       x: px, y: py, w: 16, h: PLAYER_H,
-      vx: 0, vy: 0, onGround: false, facing: 1, animT: 0, holdT: 0,
+      vx: 0, vy: 0, onGround: false, facing: 1, animT: 0, holdT: 0, groundPlat: null,
     };
   }
 
@@ -346,8 +350,17 @@
     ent.x += dx; ent.y += dy;
     for (let i = 0; i < level.platforms.length; i++) {
       const p = level.platforms[i];
+      if (p.state === 'gone') continue;              // crumbled away — not solid
       if (!aabb(ent, p)) continue;
-      if (dy > 0) { ent.y = p.y - ent.h; ent.vy = 0; ent.onGround = true; }
+      if (dy > 0) {
+        ent.y = p.y - ent.h;
+        if (p.type === 'spring') {                   // launch!
+          ent.vy = SPRING_V; ent.onGround = false; ent.groundPlat = null;
+        } else {
+          ent.vy = 0; ent.onGround = true; ent.groundPlat = p;
+          if (p.type === 'crumble' && p.state === 'idle') { p.state = 'shaking'; p.t = 0; }
+        }
+      }
       else if (dy < 0) { ent.y = p.y + p.h; ent.vy = 0; }
       else if (dx > 0) { ent.x = p.x - ent.w; ent.vx = 0; }
       else if (dx < 0) { ent.x = p.x + p.w; ent.vx = 0; }
@@ -826,8 +839,9 @@
       girlX: 330, bedX: 70,
       line: -1, textShown: 0, fade: 0, girlSurprised: false,
       camScale: 2.0, bars: 0, hearts: [], shake: 0, arrived: false,
-      gcat: null, catLift: 0, blackHold: 0,
+      gcat: null, catLift: 0, blackHold: 0, videoStarted: false,
     };
+    if (endVideo) { try { endVideo.pause(); } catch (e) {} endVideo.hidden = true; endVideo.currentTime = 0; }
     hideAllOverlays();
   }
 
@@ -856,24 +870,13 @@
         c.textShown = Math.min(CUT_LINES[2].text.length, c.textShown + 0.55);
         if (c.t > 170) { c.phase = 4; c.t = 0; }
         break;
-      case 4: { // a cat trots in toward Bedetti (her "one thing")
-        if (!c.gcat) c.gcat = { x: 16, y: CUT_BASE - 11, kind: Math.random() < 0.5 ? 'azul' : 'tigrao', held: false, bob: 0 };
-        const tx = c.bedX + 4;
-        if (c.gcat.x < tx) c.gcat.x += 1.9; else c.gcat.x = tx;
-        c.gcat.bob += 0.2;
-        if (c.gcat.x >= tx && c.t > 26) { c.phase = 5; c.t = 0; }
+      case 4: // dramatic pause, then fade the pixel stage to black
+        if (c.t > 55) c.fade = Math.min(1, c.fade + 0.02);
+        if (c.fade >= 1) { c.phase = 5; c.t = 0; }
         break;
-      }
-      case 5: // Bedetti scoops the cat into her arms and plays it cool
-        c.gcat.held = true;
-        c.catLift = Math.min(1, c.catLift + 0.06);     // cat rises into her arms
-        if (c.t > 78) { c.phase = 6; c.t = 0; }
-        break;
-      case 6: // Bedetti strolls off into the night with the cat; screen darkens
-        c.bedX -= 0.85;                                 // walk away to the left
-        if (c.t > 24) c.fade = Math.min(1, c.fade + 0.011);
-        if (c.fade >= 1) c.blackHold++;
-        if (c.blackHold > 40) { c.phase = 7; }
+      case 5: // play the ending cinematic video; when it ends -> BUILD SUCCESSFUL
+        if (!c.videoStarted) { c.videoStarted = true; playEndingVideo(); }
+        if (c.t > 900) finishCutsceneWin();            // safety fallback
         break;
       case 7:
         state = State.WIN;
@@ -882,8 +885,25 @@
     }
 
     // gentle camera push-in (kept modest — no giant characters)
-    const target = [2.0, 2.0, 2.05, 2.1, 2.12, 2.14, 2.12, 2.12][c.phase] || 2.0;
+    const target = [2.0, 2.0, 2.05, 2.1, 2.12, 2.12][c.phase] || 2.0;
     c.camScale += (target - c.camScale) * 0.06;
+  }
+
+  // play the generated ending cinematic; fall back to WIN if it can't play
+  function playEndingVideo() {
+    if (!endVideo || !endVideo.canPlayType || !endVideo.canPlayType('video/mp4')) { finishCutsceneWin(); return; }
+    try {
+      endVideo.hidden = false;
+      endVideo.currentTime = 0;
+      endVideo.onended = finishCutsceneWin;
+      endVideo.onerror = finishCutsceneWin;
+      const pr = endVideo.play();
+      if (pr && pr.catch) pr.catch(function () { finishCutsceneWin(); });
+    } catch (e) { finishCutsceneWin(); }
+  }
+  function finishCutsceneWin() {
+    if (endVideo) { try { endVideo.pause(); } catch (e) {} endVideo.hidden = true; endVideo.onended = null; endVideo.onerror = null; }
+    if (state === State.CUTSCENE) { state = State.WIN; showOverlay('win'); }
   }
 
   function drawCutscene() {
@@ -1057,6 +1077,7 @@
   function startGame() {
     resetGame();
     state = State.PLAYING;
+    if (endVideo) { try { endVideo.pause(); } catch (e) {} endVideo.hidden = true; }
     hideAllOverlays();
   }
 

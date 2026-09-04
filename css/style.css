@@ -56,6 +56,18 @@ html, body {
   image-rendering: crisp-edges;
 }
 
+/* ending cinematic video — covers the stage, sits above the canvas */
+#ending-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+  z-index: 3;
+}
+#ending-video[hidden] { display: none; }
+
 /* ------------------------------------------------------------ overlays */
 .overlay {
   position: absolute;
